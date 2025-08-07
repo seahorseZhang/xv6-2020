@@ -141,6 +141,8 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  p->trace_mask = 0;
+
   return p;
 }
 
@@ -294,6 +296,9 @@ fork(void)
 
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;
+
+  // copy parent trace mask
+  np->trace_mask = p->trace_mask;
 
   // increment reference counts on open file descriptors.
   for(i = 0; i < NOFILE; i++)
@@ -653,4 +658,16 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+uint64 activeProcNum() {
+  struct  proc *p;
+  uint64 num = 0;
+  for (p = proc; p < &proc[NPROC]; ++p) {
+    if (p->state == UNUSED) {
+      continue;
+    }
+    ++num;
+  }
+  return num;
 }
