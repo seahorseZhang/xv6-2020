@@ -291,6 +291,30 @@ uvmfree(pagetable_t pagetable, uint64 sz)
   freewalk(pagetable);
 }
 
+void vmprintinner(pagetable_t pagetable, int depth) {
+  for (int i = 0; i < 512; i++) {
+    pte_t pte = pagetable[i];
+    if (pte & PTE_V) {
+      pte_t pa = PTE2PA(pte);
+       if (depth == 0) {
+          printf(" .. %d: pte %p pa %p\n", i, pte, pa);
+       } else if (depth == 1) {
+          printf(" .. .. %d: pte %p pa %p\n", i, pte, pa);
+       } else if (depth == 2) {
+          printf(" .. .. .. %d: pte %p pa %p\n", i, pte, pa);
+       }
+       if (depth < 2) {
+          vmprintinner((pagetable_t )pa, depth + 1);
+       }
+    }
+  }
+}
+
+void vmprint(pagetable_t pagetable) {
+  printf("page table %p\n", pagetable);
+  vmprintinner(pagetable, 0);
+}
+
 // Given a parent process's page table, copy
 // its memory into a child's page table.
 // Copies both the page table and the

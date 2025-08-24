@@ -81,7 +81,40 @@ int
 sys_pgaccess(void)
 {
   // lab pgtbl: your code here.
-  return 0;
+  uint64 va;
+  int pagenum;
+  uint64 bitmask = 0;
+  uint64 maskaddr;
+  int ret = argaddr(0, &va);
+  if (ret < 0) {
+    return ret;
+  }
+  ret = argint(1, &pagenum);
+  if (ret < 0) {
+    return ret;
+  }
+  if (pagenum < 0 || pagenum > 64) {
+    printf("page num illegal: %d", pagenum);
+    return -1;
+  }
+  ret = argaddr(2, &maskaddr);
+  if (ret < 0) {
+    return ret;
+  }
+  pagetable_t pagetable = myproc()->pagetable;
+  vmprint(pagetable);
+  printf("page num: %d, va: %p \n", pagenum, va);
+  for (int i = 0; i < pagenum; ++i) {
+    pte_t *page = walk(pagetable, va + i * PGSIZE, 0);
+    if (page && (*page & PTE_V)) {
+      if (*page & PTE_A) {
+        *page ^= PTE_A;
+        bitmask |= (1 << i);
+      }
+    }
+  }
+  ret = copyout(pagetable, maskaddr, (char *)&bitmask, sizeof(bitmask));
+  return ret;
 }
 #endif
 
