@@ -57,6 +57,7 @@ sys_sleep(void)
 {
   int n;
   uint ticks0;
+  backtrace();
 
   if(argint(0, &n) < 0)
     return -1;
@@ -70,6 +71,32 @@ sys_sleep(void)
     sleep(&ticks, &tickslock);
   }
   release(&tickslock);
+  return 0;
+}
+
+uint64 sys_sigalarm(void) {
+  int tick;
+  uint64 handler;
+  int ret = argint(0, &tick);
+  if (ret < 0) {
+    printf("sys sigalarm arg 0, ret: %d\n", ret);
+    return ret;
+  }
+  ret = argaddr(1, &handler);
+  if (ret < 0) {
+    printf("sys sigalarm arg 1, ret: %d\n", ret);
+    return ret;
+  }
+  struct proc *curproc = myproc();
+  curproc->alarmInterval = tick;
+  curproc->alarmHandler = handler;
+  return 0;
+}
+
+uint64 sys_sigreturn(void) {
+  struct proc *curproc = myproc();
+  *curproc->trapframe = curproc->timercontext;
+  curproc->alarmpending = 0;
   return 0;
 }
 
