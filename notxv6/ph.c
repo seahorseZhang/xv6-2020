@@ -6,7 +6,9 @@
 #include <sys/time.h>
 
 #define NBUCKET 5
-#define NKEYS 100000
+#define NKEYS 60000
+
+pthread_mutex_t lock;
 
 struct entry {
   int key;
@@ -17,7 +19,6 @@ struct entry *table[NBUCKET];
 int keys[NKEYS];
 int nthread = 1;
 
-
 double
 now()
 {
@@ -27,13 +28,15 @@ now()
 }
 
 static void 
-insert(int key, int value, struct entry **p, struct entry *n)
+insert(int key, int value, struct entry **p)
 {
   struct entry *e = malloc(sizeof(struct entry));
   e->key = key;
   e->value = value;
-  e->next = n;
+  pthread_mutex_lock(&lock);
+  e->next = *p;
   *p = e;
+  pthread_mutex_unlock(&lock);
 }
 
 static 
@@ -52,7 +55,7 @@ void put(int key, int value)
     e->value = value;
   } else {
     // the new is new.
-    insert(key, value, &table[i], table[i]);
+    insert(key, value, &table[i]);
   }
 
 }
@@ -104,7 +107,7 @@ main(int argc, char *argv[])
   pthread_t *tha;
   void *value;
   double t1, t0;
-
+  pthread_mutex_init(&lock, NULL);
 
   if (argc < 2) {
     fprintf(stderr, "Usage: %s nthreads\n", argv[0]);
